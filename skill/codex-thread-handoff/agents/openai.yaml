@@ -1,0 +1,4 @@
+interface:
+  display_name: "Codex Thread Handoff"
+  short_description: "Safely migrate and validate long-running Codex tasks"
+  default_prompt: "Use $codex-thread-handoff to prepare and validate a safe handoff for this long-running Codex task."
