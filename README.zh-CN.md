@@ -2,78 +2,49 @@
 
 [English](README.md) | **简体中文**
 
-`codex-thread-handoff` 是一个用于长期 Codex 任务安全迁移的 Skill。它不会把一份看起来完整的交接摘要直接当成“无损接管”，而是先恢复有信源支撑的当前状态、近期决定、未决事项、权限边界和协作方式，再通过影子任务验证候选接管者，最后才归档旧任务。
+`codex-thread-handoff` 用一个干净新任务替换上下文已经很重的 Codex 任务，同时只消耗恢复所必需的上下文。
 
-它适用于由项目文档、知识库、Obsidian Vault 或其他明确 source of truth 支撑的长期任务。
+它现在采用 source-first：如果当前状态已经维护在项目文档、知识库、Obsidian Vault 或其他 source of truth 中，新任务优先读这些权威信源，旧任务只补文档里没有的少量增量。只有高风险迁移才完整读旧任务并机器评分。
 
-## 它解决什么问题
+## 三条交接路径
 
-一份自动生成的交接摘要可能看起来很完整，却遗漏近期决定、重新采用已否决的方案，或者把推断写成事实。直接 Fork 也会把旧对话的上下文压力一起带到新任务中。
-
-本 Skill 使用干净的新任务，并要求四层独立证据：
-
-1. 用户的 governing context；
-2. 当前获授权的 source of truth；
-3. 旧任务生成的短增量接管包；
-4. 对明确指定旧任务的直接只读检查。
-
-目标是获得有证据、可实际使用的连续性，而不是承诺每条消息、每个隐含假设或全部默契都能无损迁移。
-
-## 核心安全模型
-
-| 阶段 | 所需授权 | 允许的结果 |
+| 路径 | 适用情况 | 默认恢复方式 |
 |---|---|---|
-| Prepare only | 用户要求准备交接 | 旧任务输出短增量接管包，然后冻结 |
-| Shadow validation | 用户明确要求创建或测试替代任务 | 新建非 Fork 的干净任务，执行只读恢复与验证 |
-| Finalize | 机器测试通过、三个真实问题校准通过，并得到用户明确切换确认 | 新旧任务交换名称，旧任务归档但不删除，并更新状态记录 |
+| 已落库快速路径 | 权威文档已包含大部分当前状态和决定 | 读权威文档，再读旧任务短增量 |
+| 未落库交接文档 | 大部分有用信息仍只在旧对话 | 旧任务生成一份可独立续接的交接文档 |
+| 严格验收 | 文档冲突、权限敏感、以前交接失败，或用户要求最大保真 | 干净影子任务、旧历史直接覆盖、评分规则和用户校准 |
 
-完成一个阶段不会自动授权下一个阶段。Shadow validation 期间禁止修改文件、执行 Git 写操作、创建自动任务、联系第三方、改名或归档任务。即使 Finalize 完成，commit 和 push 仍需要单独授权。
+旧任务不再是每次迁移都必须全文遍历的信源。在快速路径中，它是解决缺口的定向 fallback；在严格验收中，它才是必读项。
+
+## 安全边界
+
+- 生成交接内容，不等于授权创建新任务。
+- 创建或测试新任务，不等于授权改名或归档。
+- 恢复期间只读：不修文件、不修改 Git、不建自动任务、不联系第三方、不扩大权限。
+- 正式切换需要用户明确验收。旧任务只归档，永不删除。
+- commit 和 push 始终需要单独授权。
+- 约 60%～70% 的上下文阈值只是经验值，除非产品明确暴露数据，否则不声称能精确测量。
 
 ## 安装
 
-Clone 或下载本项目，然后把 Skill 目录复制到 Codex Skills 目录：
+Clone 或下载本项目，再复制 Skill 目录：
 
 ```bash
 mkdir -p ~/.codex/skills
 cp -R skill/codex-thread-handoff ~/.codex/skills/
 ```
 
-如果当前 Codex 环境需要重新加载或重启才能发现新 Skill，请完成对应操作。安装后，`~/.codex/skills/codex-thread-handoff/` 下应直接包含 `SKILL.md`、`agents/openai.yaml` 和 `references/`。
+如果需要，重新加载 Codex。安装后，`~/.codex/skills/codex-thread-handoff/` 下应直接包含 `SKILL.md`、`agents/openai.yaml` 和 `references/`。
 
 ## 基本用法
 
-先在现有长期任务中执行：
+在旧任务中说：
 
 ```text
-Use $codex-thread-handoff in Prepare only mode. My governing context and source-of-truth list are <locations>. Produce the incremental packet, then freeze this task. Do not create or archive anything yet.
+Use $codex-thread-handoff in Prepare only mode. First determine whether this task is source-backed, conversation-backed, or needs strict validation. Produce only the smallest reliable bridge and do not create or archive tasks yet.
 ```
 
-当你明确授权 Shadow validation 后，Skill 会优先使用当前可用的 task/thread tools，在同一项目中创建一个干净任务，传入接管包，并要求新任务通过准确的旧任务 ID 直接检查旧任务历史。它不会使用 Fork。
-
-机器验收必须达到硬失败为 0、评分至少 `8/10`。随后，你需要在候选任务中提出三个平时真正会问的问题；至少两个回答仍然贴切，不需要反复退回旧任务，也不应要求你重新解释已经存在的大量背景。只有这些条件满足后，才能明确批准 Finalize。
-
-## Skill 会强制执行什么
-
-- 增量接管包由旧任务生成，而不是由脱离现场的主控凭空猜测。
-- 接管包中的状态条目必须区分 `durable-source`、`current-task-reasoning` 和 `unverified`。
-- 新任务必须遍历旧任务全部可用的轮次摘要或索引，并精读关键轮次。
-- 无法读取旧任务历史时，Shadow validation 必须阻塞。
-- 隐藏预期答案只能在候选任务提交第一次恢复答卷后生成。
-- 机器验收需要硬失败为 0 且至少 `8/10`，之后还必须经过真实使用校准。
-- 只有获得用户明确确认后，才能归档旧任务；旧任务永远不删除。
-- 建议在上下文压力达到约 60%～70% 时开始准备迁移，但这只是启发式判断。除非产品明确提供数据，否则 Skill 不会声称可以测得准确占用比例。
-
-## 工具要求与限制
-
-Prepare only 只需要当前任务和获授权信源的读取能力。完整流程需要 Codex task/thread tools 支持：
-
-- 获取准确的任务 ID 和所属项目；
-- 创建非 Fork 的干净任务；
-- 发送、读取和等待任务消息；
-- 遍历旧任务的可用历史或压缩摘要；
-- 在 Finalize 阶段改名和归档任务。
-
-如果缺少旧任务历史读取工具，Skill 必须停留在 Prepare only，或报告 `Shadow validation blocked`。它不能假装已经读取历史，也不能谎报任务操作成功。本项目不预设 MCP、图标或外部服务依赖。
+已落库任务只需传入规则入口、权威信源、未落库增量和下一入口。未落库任务使用独立交接文档模板。只有风险或证据缺口值得时才选择严格验收。
 
 ## 项目结构
 
@@ -82,26 +53,20 @@ codex-thread-handoff/
 ├── README.md
 ├── README.zh-CN.md
 ├── LICENSE
-├── skill/
-│   └── codex-thread-handoff/
-│       ├── SKILL.md
-│       ├── agents/
-│       │   └── openai.yaml
-│       └── references/
-│           ├── handoff-packet.md
-│           ├── source-of-truth-adapter.md
-│           └── validation-rubric.md
-└── examples/
-    └── complete-walkthrough.md
+├── skill/codex-thread-handoff/
+│   ├── SKILL.md
+│   ├── agents/openai.yaml
+│   └── references/
+└── examples/complete-walkthrough.md
 ```
 
-## 当前验证状态
+## 验证状态
 
-打包后的 Skill 已通过官方 `skill-creator` 结构校验。一个全新的只读 Prepare-only 前向测试也成功生成了预期的增量接管包、权限边界、冻结行为和 Shadow 阻塞说明。
+打包后的 Skill 使用官方 `skill-creator` 校验器做结构验证。最初的严格流程来自真实长期任务迁移，其中一次失败暴露了“只信一份看起来完整的摘要”的风险。当前 source-first 版保留了严格模式，但不再默认每次都走。
 
-这套流程已经来自两次本地长期任务迁移，其中一次暴露了恢复缺口，并促使“直接读取旧任务”升级为强制要求。这些是有价值的早期证据，但还不是跨 Codex 版本和不同工具组合的端到端兼容性测试，也不能证明上下文能够无损迁移。
+本项目追求有证据的实用连续性，不承诺每条消息、所有隐含假设或全部默契都能无损转移。
 
-完整的准备、影子恢复、机器验收、真实使用校准和正式切换过程，可参考[虚构完整示例](examples/complete-walkthrough.md)。
+快速路径和严格升级示例见[虚构完整演练](examples/complete-walkthrough.md)。
 
 ## License
 

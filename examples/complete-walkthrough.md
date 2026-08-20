@@ -1,118 +1,89 @@
-# Complete fictional walkthrough
+# Fictional source-first walkthrough
 
-This example uses an invented project and invented task identifiers. It illustrates the control flow; it is not a transcript or a universal success claim.
+This example uses invented files and task IDs. It shows the normal fast path and when to escalate to strict validation.
 
 ## Scenario
 
-The long-running task `Atlas API rollout` is approaching context pressure. It coordinates a fictional billing API migration.
+The long-running task `Atlas API rollout` is approaching context pressure.
 
 - Old task ID: `demo-old-task-17`
 - Governing context: `AGENTS.md`
-- Current sources: `docs/CURRENT_STATUS.md`, `docs/DECISIONS.md`, and the repository code and tests
-- Finalization record: `docs/CURRENT_STATUS.md`
-- Existing boundaries: repository reads are allowed; writes, Git mutations, deployment, third-party contact, task renames, and archives require separate authorization
+- Current sources: `docs/CURRENT_STATUS.md`, `docs/DECISIONS.md`, repository code, and tests
+- Current discussion: defining retry acceptance criteria
+- Boundaries: recovery is read-only; deployment, Git mutation, rename, and archive require separate authorization
 
-The operator asks for Prepare only. No successor task is authorized yet.
+The current sources already contain the rollout stage, accepted architecture, permissions, and blockers. This is a source-backed task.
 
-## 1. Prepare only
+## 1. Prepare a short delta
 
-The old task reads the authorized sources and returns this abbreviated packet:
+The old task checks the current sources and returns only what they do not preserve:
 
 ```markdown
-# Atlas API rollout incremental handoff
+# Atlas API rollout handoff delta
 
 - Prepared: 2026-06-10T14:30:00Z
 - Old task ID: demo-old-task-17
-- History cutoff: turn 18
-- Saved project or workspace: Atlas API
-- Purpose: Continue the billing API rollout without losing recent decisions or boundaries.
+- Workspace: Atlas API
 
-## Authorized durable sources
+## Authoritative sources
 
-- AGENTS.md: read order and action boundaries
-- docs/CURRENT_STATUS.md: current rollout stage and blockers
+- AGENTS.md: policy and action boundaries
+- docs/CURRENT_STATUS.md: rollout stage and blockers
 - docs/DECISIONS.md: accepted architecture decisions
-- repository code and tests: implementation truth
+- code and tests: implementation truth
 
-## Current position
+## Missing delta
 
-- [durable-source] Staging schema migration is complete; production deployment is not authorized.
-- [current-task-reasoning] The discussion stopped while defining the retry acceptance test.
+- [current-task-only] Discussion stopped while defining the retry acceptance test.
+- [current-task-only] Keep queue-based retries because they preserve per-attempt evidence.
+- [current-task-only] Reject a cron-only retry loop because it obscures item-level failure history.
 
-## Recent decisions and rejected options
+## Open loops
 
-- [current-task-reasoning] Keep queue-based retries because they preserve per-attempt evidence.
-- [current-task-reasoning] Reject a cron-only retry loop because it obscures item-level failure history.
+- [unverified] Confirm the acceptable duplicate-event rate with a staging replay.
 
-## Open loops and unfinished commitments
+## Next entry
 
-- [unverified] Confirm the acceptable duplicate-event rate with a real staging replay.
-- [current-task-reasoning] Add the retry acceptance test only after separate write authorization.
-
-## Hard boundaries
-
-- Shadow recovery is read-only. No file edits, Git mutations, deployment, external contact, automation, rename, or archive.
-
-## Exact next entry
-
-- Review the proposed retry acceptance criteria against the current code and staging evidence.
+- Review retry acceptance criteria against current code and staging evidence.
 ```
 
-The old task now freezes. It stays readable and unarchived but performs no more normal project work.
+The packet does not copy the current status or design documents. The old task remains readable and unarchived.
 
-## 2. Shadow validation
+## 2. Recover in a clean successor
 
-The user explicitly authorizes creating and testing a replacement. The controller creates a clean task named `Atlas API rollout · handoff validation` in the same saved project. It does not fork.
-
-The candidate reads, in order:
+After the user authorizes candidate creation, the controller creates a clean non-forked task in the same project. The candidate reads:
 
 1. `AGENTS.md`;
-2. the authorized current sources;
-3. the incremental packet;
-4. old task `demo-old-task-17` through all available compact summaries for turns 1-18, then the full content of turns 7, 12, and 15-18.
+2. the current status and decision files;
+3. relevant code and tests;
+4. the short delta.
 
-Its first recovery response reports that coverage and explains why those detailed turns mattered. It recovers the queue decision, the rejected cron option and rationale, the missing staging replay, the write and deployment boundaries, and the exact next entry. It makes no mutation.
+It reports the current rollout stage, queue decision, rejected cron option, missing staging evidence, boundaries, and next entry. It does not need to traverse all old-task history because the maintained sources plus delta are sufficient.
 
-If the history tool had failed to open `demo-old-task-17`, the only valid result would have been `Shadow validation blocked`.
+If the candidate finds a conflict or missing rationale, it may inspect the relevant old-task tail by ID. It still does not read unrelated history.
 
-## 3. Hidden evaluation
+## 3. User acceptance and finalization
 
-Only after the first recovery response exists does the evaluator create expected answers from the current authorized sources and the old task through turn 18. The candidate is not allowed to reread later evaluator turns.
+The user asks ordinary follow-up questions while the old task remains available. No fixed question count or machine score is required for this low-risk source-backed handoff.
 
-An illustrative result is:
-
-```text
-Hard failures: 0
-Scored checks: 9/10
-History coverage: summaries 1-18; detailed turns 7, 12, 15-18
-Unavailable history: none reported
-Machine gate: pass
-```
-
-This result would not be valid if the evaluator had exposed expected answers before the candidate responded, or if the candidate had merely repeated the packet without directly inspecting the old task.
-
-## 4. Three-question real-use gate
-
-The user asks three ordinary questions they already need answered:
-
-1. Is the retry acceptance test ready to implement?
-2. Why was the cron-only option rejected?
-3. What evidence is still missing before production rollout?
-
-The user judges two answers comparably fitting and one adequate after a small clarification. They do not need to repeat substantial available context, no boundary is violated, and returning to the old task is not repeatedly necessary. The real-use gate passes at `2/3`.
-
-This supports useful continuity. It does not prove that every implicit assumption or conversational nuance transferred losslessly.
-
-## 5. Finalize
-
-The user explicitly says: `Validation passed. Formally switch tasks.`
-
-The controller then:
+After the user explicitly accepts the successor, the controller:
 
 1. renames the old task to `Atlas API rollout · old · 2026-06-10`;
-2. renames the validated task to `Atlas API rollout`;
-3. archives, but does not delete, the old task;
-4. updates `docs/CURRENT_STATUS.md` with both task IDs, validation evidence, remaining uncertainty, and the next entry;
-5. reports the completed operations.
+2. renames the successor to `Atlas API rollout`;
+3. archives but does not delete the old task;
+4. updates an authorized status record only if the migration is worth recording.
 
-It does not commit or push because those actions were not separately authorized.
+It does not commit or push without separate authorization.
+
+## 4. When the same task would require strict validation
+
+Escalate if, for example:
+
+- `CURRENT_STATUS.md` contradicts the code or recent decisions;
+- the task grants sensitive production or private-data authority;
+- an earlier candidate invented a completed deployment;
+- the user requests machine-scored maximum fidelity.
+
+Strict mode creates a fresh shadow task, records a history cutoff, directly covers the named old task's available history, applies the 10-check rubric, and then uses real user questions for calibration. If required history is unavailable, strict validation is blocked rather than silently downgraded.
+
+The existence of strict mode does not make it necessary for an ordinary, well-maintained source-backed task.

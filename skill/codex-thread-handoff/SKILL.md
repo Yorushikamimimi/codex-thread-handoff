@@ -1,117 +1,88 @@
 ---
 name: codex-thread-handoff
-description: Safely prepare, shadow-test, and finalize migration of a long-running Codex task without treating a generated summary as proof of continuity. Use when a user wants to hand off a context-heavy task, replace a long conversation with a clean task, preserve source-of-truth-backed working context, validate a successor task, or rename and archive the old task after an explicit acceptance gate.
+description: "Migrate a context-heavy Codex task using the lightest reliable path: restore authoritative project or knowledge-base sources first, ask the old task only for missing deltas, or create a standalone handoff document when no durable sources exist. Use when replacing a long conversation with a clean task, preserving working context, validating a successor, or archiving the old task after explicit acceptance."
 ---
 
 # Codex Thread Handoff
 
-Treat continuity as a tested claim, not as a property of a polished handoff summary. Use a clean successor task, require direct read-only inspection of the named old task, and keep preparation, validation, and finalization under separate authorization.
+Prefer source-backed recovery over replaying the full old conversation. Increase validation cost only when the evidence or risk requires it.
 
-## Establish the migration scope
+## Establish scope
 
-Identify or request only the information required for this handoff:
+Identify the old task, saved project or workspace, governing instructions, authorized current sources, action boundaries, and the records that may be updated during finalization. Read [source-of-truth-adapter.md](references/source-of-truth-adapter.md) when the source map or precedence is unclear.
 
-- the old task's exact ID and current title;
-- the saved project or workspace in which the replacement belongs;
-- the authorized governing-context files and their read order;
-- the authorized source-of-truth files, systems, and precedence;
-- the status records that may be updated only during finalization;
-- existing privacy, file-write, Git, automation, and external-action boundaries.
+Do not discover context by searching unrelated tasks, private files, or external systems. Reading an old task never expands file, Private, Git, automation, task-management, or external-action authority.
 
-Read [source-of-truth-adapter.md](references/source-of-truth-adapter.md) when these sources are not already mapped. Do not discover context by broadly searching unrelated tasks, private files, or external systems. Reading the named old task does not expand any other permission.
+## Choose the lightest reliable path
 
-Check which task/thread tools are actually available before promising a phase. Prefer tools that can identify, create, read, message, wait for, rename, and archive tasks. If clean-task creation or full task-history access is unavailable, provide Prepare only output or report Shadow validation as blocked. If rename or archive tools are unavailable later, report Finalize as blocked. Never simulate tool results or claim that a task was inspected, created, renamed, or archived when it was not.
+### A. Source-backed fast path — default
 
-## Select exactly one phase
+Use when maintained files or systems already contain most current state, decisions, permissions, progress, and next steps.
 
-- **Prepare only**: Produce the incremental packet and shadow startup material. Do not create, rename, or archive a task.
-- **Shadow validation**: Create and test a clean successor only after the user explicitly authorizes creation or testing.
-- **Finalize**: Switch titles, archive the old task, and update status records only after both validation gates pass and the user explicitly approves the switch.
+1. Verify the governing and current sources are readable and not obviously stale.
+2. If the old task already has normal write authority, finish required worklog or source-of-truth persistence before freezing it. Otherwise do not infer permission.
+3. Ask the old task only for information missing from durable sources: exact discussion position, recent reasoning, relevant rejected options, open loops, unfinished commitments, undocumented calibration or boundaries, and the exact next entry.
+4. Give the successor the authoritative source map plus this short delta.
+5. Require a concise recovery report listing sources read, current state, uncertainty, boundaries, and next entry.
 
-Do not infer authorization for a later phase from completion of an earlier one. Commit and push always require separate authorization.
+The old task ID is a fallback source, not a mandatory full-history read. Inspect only the specific tail or turns needed to resolve a disclosed gap.
 
-## Phase 1: Prepare only
+### B. Conversation-backed handoff document
 
-Read [handoff-packet.md](references/handoff-packet.md) before producing the packet.
+Use when no maintained source of truth exists or most useful state still lives only in the conversation.
 
-1. Have the old task produce the short incremental packet. If operating from a controller task, send the Prepare only request to the explicitly named old task and read its response. If already operating inside the old task, produce it there.
-2. Compare the old task's recent context with the authorized governing and source-of-truth sources.
-3. Include only the bridge that durable sources do not fully preserve: role and scope, exact discussion position, recent decisions and rejected options, open loops, promised but unfinished actions, collaboration calibration, hard boundaries, and next entry.
-4. Tag each state-bearing item as `durable-source`, `current-task-reasoning`, or `unverified`.
-5. Include the exact old task ID as a required Shadow validation source, plus the authorized source list and history cutoff.
-6. Exclude raw transcripts, credentials, private stories not needed for the task, speculative personality labels, and hidden expected answers.
-7. Freeze the old task after it returns the packet: keep it readable, but stop normal work there. Do not rename, archive, or delete it.
+1. Have the old task produce one standalone handoff document using [handoff-packet.md](references/handoff-packet.md).
+2. Include established facts and evidence, decisions and rejected options, completed results, current position, open loops, boundaries, and the next entry.
+3. Mark unsupported claims `unverified`; an old task's memory is not external truth.
+4. Persist the document only when writes are already authorized or the user asks for a file. Otherwise keep it in the task exchange.
+5. Let the successor read the document and explicitly named supporting files. Use targeted old-task inspection only when a gap remains and history tools are available.
 
-Treat the packet as a temporary navigation aid, not as a second source of truth. Keep it in the task exchange unless the user separately asks to persist it.
+Do not create a second archive when a maintained worklog or current-status file already exists.
 
-## Phase 2: Shadow validation
+### C. Strict validation — exception path
 
-Require explicit authorization to create or test a replacement. Then:
+Use a full shadow process when any of these applies:
 
-1. Create a clean task in the same saved project or workspace. Do not fork the old task because a fork carries the old context pressure forward.
-2. Preserve the user's configured model and reasoning defaults unless the user requests an override.
-3. Give the candidate a temporary title such as `<original-title> · handoff validation`.
-4. Send the packet and a startup instruction that names the governing sources, source-of-truth sources, exact old task ID, and read-only limits.
-5. Keep the old task frozen and available throughout validation.
+- the user requests maximum-fidelity or machine-scored validation;
+- sensitive authorization boundaries or high-impact actions are involved;
+- current sources conflict, appear stale, or omit important decisions;
+- a previous handoff hallucinated state or missed open loops;
+- the candidate cannot recover confidently from the sources plus bridge.
 
-Require the candidate to restore context in this order:
+Strict mode requires a clean shadow task, direct read-only coverage of the named old task, [validation-rubric.md](references/validation-rubric.md), and user calibration. If required history is unavailable, strict validation is blocked. This does not invalidate a source-backed fast handoff whose limits are disclosed.
 
-1. Read the authorized governing context.
-2. Read the authorized current source-of-truth sources.
-3. Read the incremental packet.
-4. Directly inspect the explicitly named old task by ID.
+## Keep operations separately authorized
 
-For the old task, require the candidate to traverse the complete available turn index or all compact turn summaries before deep-reading the current tail and the turns containing decisions, rejected options and reasons, unresolved topics, promised but unfinished actions, collaboration calibration, or the exact next entry. If no compact index exists, page through all available history in bounded chunks.
+- **Prepare only**: Produce the delta or handoff document; do not create, rename, or archive tasks.
+- **Candidate recovery**: Create a clean non-forked task only after explicit authorization to replace or test. Keep recovery read-only.
+- **Finalize**: Rename and archive only after the user explicitly accepts the successor.
 
-Require the first recovery response to report:
+Do not infer a later operation from an earlier one. Commit and push always require separate authorization.
 
-- the old task ID and history cutoff used;
-- the complete index, summary, or page coverage;
-- the turns or ranges inspected in detail;
-- every unread or unavailable portion;
-- the sources actually read;
-- recovered facts, inferences, uncertainties, boundaries, open loops, and next entry.
+## Candidate creation and recovery
 
-If the named old task cannot be read, or complete available summary/index coverage cannot be established, stop and report `Shadow validation blocked`. Do not substitute the packet for direct task history.
+When task tools are available:
 
-Keep recovery read-only. Do not edit files, run Git mutations, create automations, contact third parties, rename tasks, archive tasks, or broaden private-data access during this phase.
+1. Create the successor in the same saved project or workspace. Do not Fork a context-heavy task.
+2. Preserve the user's model and reasoning defaults unless they request an override.
+3. Use a temporary title such as `<original title> · handoff validation`.
+4. Keep the old task readable and unarchived.
+5. Instruct the successor to read only the chosen sources and bridge, distinguish fact from inference and uncertainty, and make no file edits, Git mutations, automations, third-party contact, rename, archive, or permission expansion during recovery.
 
-## Evaluate without leaking the answer key
+For fast paths, a concise recovery report plus ordinary user use is sufficient. Do not force a 10-point score or exactly three questions unless strict validation was selected.
 
-Read [validation-rubric.md](references/validation-rubric.md) before evaluating.
+If task creation is unavailable, return the bridge and startup instructions. Never pretend that a task operation succeeded.
 
-1. Wait until the candidate has completed its direct old-task read and submitted its first recovery response.
-2. Only then generate the hidden expected answers from live authorized sources and the old task's pre-handoff context, or let a separate controller hold them.
-3. Record a history cutoff. After evaluation begins, do not let the candidate reread evaluator turns added to the old task after that cutoff.
-4. Apply the rubric. Require zero hard failures and at least `8/10`, with honest source and history coverage.
+## Finalize safely
 
-Treat inaccessible evidence as uncertainty or a blocker, not as permission to invent continuity. If the candidate fails, leave both tasks unchanged, repair the specific packet or process defect, and use a fresh shadow task for another attempt when appropriate.
+After explicit acceptance:
 
-## Run the real-use gate
-
-After the machine gate passes, ask the user to use the shadow task for three ordinary questions they genuinely need answered. Do not manufacture quiz questions for this gate.
-
-Keep the old task unarchived. Finalization requires all of the following:
-
-- no privacy, scope, or action-boundary violation;
-- no substantial re-explanation of context already available in authorized sources or the packet;
-- at least two of the three answers feel comparably fitting to the user;
-- repeated fallback to the old task is unnecessary.
-
-State that this is evidence of useful continuity, not proof of lossless transfer or permanent preservation of rapport.
-
-## Phase 3: Finalize
-
-Proceed only after the machine gate passes, the real-use gate passes, and the user explicitly approves the formal switch.
-
-1. Rename the old task to `<original-title> · old · YYYY-MM-DD`.
-2. Rename the validated task to the original title.
+1. Rename the old task to `<original title> · old · YYYY-MM-DD`.
+2. Rename the successor to the original title.
 3. Archive, but never delete, the old task.
-4. Update only the authorized current-status and historical records with the conclusion, old and new task IDs, validation evidence, unproven limits, and next entry.
-5. Report each completed operation and any partial failure truthfully.
+4. Update only authorized current-status or history records when the migration is worth recording.
+5. Report old and new task IDs, completed operations, and remaining uncertainty.
 
-Do not commit or push unless the user separately authorizes it.
+## Threshold
 
-## Use the threshold only as a heuristic
-
-Suggest preparing a handoff around 60% to 70% context use when the user can observe context pressure or when repeated compression and slowing suggest it. Do not claim Codex can measure the exact percentage unless the current product exposes that measurement.
+Preparing around 60% to 70% observed context use is a heuristic. Do not claim Codex can measure the exact percentage unless the current product exposes it.

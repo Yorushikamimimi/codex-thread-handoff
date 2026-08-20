@@ -1,4 +1,4 @@
 interface:
   display_name: "Codex Thread Handoff"
-  short_description: "Safely migrate and validate long-running Codex tasks"
-  default_prompt: "Use $codex-thread-handoff to prepare and validate a safe handoff for this long-running Codex task."
+  short_description: "Recover from sources first; validate strictly only when needed"
+  default_prompt: "Use $codex-thread-handoff to choose the lightest reliable handoff path for this Codex task."
