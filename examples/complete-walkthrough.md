@@ -51,7 +51,7 @@ The packet does not copy the current status or design documents. The old task re
 
 ## 2. Recover in a clean successor
 
-After the user authorizes candidate creation, the controller creates a clean non-forked task in the same project. The candidate reads:
+After the user authorizes candidate creation, the controller checks whether the current sources have uncommitted changes and chooses an environment that can read them. It passes any required model and reasoning effort when the task tool supports them, discloses any configuration it cannot guarantee, and creates a clean non-forked task. The candidate reports its actual working directory and source access before validation continues. It reads:
 
 1. `AGENTS.md`;
 2. the current status and decision files;

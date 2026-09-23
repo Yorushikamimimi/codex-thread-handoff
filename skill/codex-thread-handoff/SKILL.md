@@ -63,11 +63,12 @@ Do not infer a later operation from an earlier one. Commit and push always requi
 
 When task tools are available:
 
-1. Create the successor in the same saved project or workspace. Do not Fork a context-heavy task.
-2. Preserve the user's model and reasoning defaults unless they request an override.
-3. Use a temporary title such as `<original title> · handoff validation`.
-4. Keep the old task readable and unarchived.
+1. Check where the authoritative current sources actually live, including relevant uncommitted changes. Create the successor where it can read those facts. A fresh worktree does not contain uncommitted changes from the live checkout; use the live checkout when those changes matter. Do not Fork a context-heavy task.
+2. Determine the model and reasoning effort from the user's request, governing instructions, or known task settings. Pass required values explicitly when the creation tool supports them; if it cannot, disclose that the requested configuration cannot be guaranteed. Do not silently substitute a different configuration or claim runtime settings that the platform does not expose.
+3. Tell the user how many candidates are being created, their recovery role, the selected model and reasoning effort when known, and that they are clean non-forked tasks. Distinguish values passed to the tool from independently verified runtime values.
+4. Use a temporary title such as `<original title> · handoff validation`. Keep the old task readable and unarchived.
 5. Instruct the successor to read only the chosen sources and bridge, distinguish fact from inference and uncertainty, and make no file edits, Git mutations, automations, third-party contact, rename, archive, or permission expansion during recovery.
+6. Have the successor report its actual working directory and whether it can read the current authoritative sources. If it cannot access the current facts, stop validation; do not finalize or archive the old task.
 
 For fast paths, a concise recovery report plus ordinary user use is sufficient. Do not force a 10-point score or exactly three questions unless strict validation was selected.
 

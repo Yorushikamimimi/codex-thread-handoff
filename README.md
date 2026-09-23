@@ -21,6 +21,8 @@ The old task is no longer a mandatory full-history read for every migration. It 
 - Preparing a bridge does not authorize creating a successor.
 - Creating or testing a successor does not authorize renaming or archiving tasks.
 - Recovery remains read-only: no file edits, Git mutations, automations, third-party contact, or permission expansion.
+- Before creating a successor, check whether current facts include uncommitted changes. Use an environment that can read them, then verify the successor's actual working directory and source access.
+- State the selected model and reasoning effort when known, pass required values explicitly when supported, and disclose any configuration or runtime details the platform cannot verify.
 - Finalization requires explicit user acceptance. The old task is archived, never deleted.
 - Commit and push require separate authorization.
 - A suggested 60% to 70% context threshold is only a heuristic unless the product exposes an exact measurement.
