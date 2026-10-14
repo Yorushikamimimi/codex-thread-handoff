@@ -48,6 +48,16 @@ Use $codex-thread-handoff in Prepare only mode. First determine whether this tas
 
 For a source-backed task, pass the successor the governing instructions, authoritative source map, missing delta, and exact next entry. For a conversation-backed task, use the standalone handoff template. Select strict validation only when the risk or evidence gap warrants it.
 
+## A small project handoff
+
+Imagine an image organizer whose status file records an import feature, while export is unfinished. The old conversation has just decided to start with PNG export.
+
+1. Prepare only: check project instructions and current docs, then pass only the missing decision and discussion position.
+2. After explicit authorization, let a clean successor recover read-only in a workspace that can access the current files. A status-file claim is not a runtime verification.
+3. Accept and authorize finalization before renaming or archiving. Development, commit, push, and deployment remain separately authorized.
+
+The [beginner example (中文)](examples/basic-handoff.md) includes three fictional project files, user prompts, and an example recovery response.
+
 ## Project structure
 
 ```text
@@ -63,10 +73,14 @@ codex-thread-handoff/
 │           ├── handoff-packet.md
 │           ├── source-of-truth-adapter.md
 │           └── validation-rubric.md
-└── examples/complete-walkthrough.md
+└── examples/
+    ├── basic-handoff.md
+    └── complete-walkthrough.md
 ```
 
 ## Validation status
+
+2026-10-14: added the Chinese beginner example and links from both READMEs. This is a documentation walkthrough; no tasks were created or archived, and the Skill behavior is unchanged.
 
 The packaged Skill is structurally validated with the official `skill-creator` validator. Its original strict workflow was developed from real long-running-task migrations, including a failed recovery that exposed the danger of trusting a polished summary. The current source-first revision preserves that strict mode but makes it an exception rather than the default.
 

@@ -48,6 +48,16 @@ Use $codex-thread-handoff in Prepare only mode. First determine whether this tas
 
 已落库任务只需传入规则入口、权威信源、未落库增量和下一入口。未落库任务使用独立交接文档模板。只有风险或证据缺口值得时才选择严格验收。
 
+## 一个普通项目怎样交接
+
+假设你正在做图片整理小工具：导入入口已记录为完成，导出还没做，讨论刚停在“第一版先支持 PNG”。
+
+1. 旧对话核对项目规则、README 与当前进度，只补“先支持 PNG”等文档没有的决定，暂不创建新任务。
+2. 你明确同意后，新对话在能读到当前文件的工作区只读恢复，说明停点、未验证项和权限；不能把文档记录说成运行验收。
+3. 你确认接对并授权收口后，才正式切换、归档旧对话。实现导出、commit 和 push 仍需各自授权。
+
+看 [中文入门示例](examples/basic-handoff.md)：包含三份虚构项目文件、可以照着使用的提示和新对话回复示意。
+
 ## 项目结构
 
 ```text
@@ -59,10 +69,14 @@ codex-thread-handoff/
 │   ├── SKILL.md
 │   ├── agents/openai.yaml
 │   └── references/
-└── examples/complete-walkthrough.md
+└── examples/
+    ├── basic-handoff.md
+    └── complete-walkthrough.md
 ```
 
 ## 验证状态
+
+2026-10-14：新增中文入门示例与中英文 README 入口；这是文档演示，本次没有实际创建或归档任务，Skill 行为规则未改。
 
 打包后的 Skill 使用官方 `skill-creator` 校验器做结构验证。最初的严格流程来自真实长期任务迁移，其中一次失败暴露了“只信一份看起来完整的摘要”的风险。当前 source-first 版保留了严格模式，但不再默认每次都走。
 
